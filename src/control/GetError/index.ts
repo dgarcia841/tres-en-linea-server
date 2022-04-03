@@ -15,6 +15,18 @@ const Errors = ErrorFactory({
     USERNAME_EXISTING: {
         code: 1,
         error: "Ya está en emparejamiento un jugador con el mismo nombre"
-    }
+    },
+    GAME_NOT_FOUND: {
+        code: 2,
+        error: "No se ha encontrado la partida solicitada"
+    },
+    PLAYER_NOT_FOUND: {
+        code: 2,
+        error: "No se ha encontrado el nombre de usuario en la partida"
+    },
+    GAME_PLAY_ERROR: {
+        code: 2,
+        error: "No se ha podido realizar la jugada"
+    },
 });
 type IError = keyof typeof Errors;

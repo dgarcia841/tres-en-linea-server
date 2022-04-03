@@ -4,55 +4,120 @@ import NameManager from "../Util/NameManager";
 import Game from "./Game";
 import Player from "./Player";
 
+/**
+ * Controlador de la conexión de juego
+ */
 export default class GameServer {
     public readonly server: GameServer.IServer;
 
-    public readonly playerQueue: Player[];
+    public readonly players: Player[];
+    public readonly queue: Player[];
     public readonly games: Game[];
 
     public constructor(port = 9000) {
         this.server = new IO.Server(port);
-        this.playerQueue = [];
+        this.players = [];
+        this.queue = [];
         this.games = [];
+
         this.server.on("connect", socket => {
-            console.log("Nuevo cliente conectado!");
             // Iniciar emparejamiento
-            socket.on("startGame", (username) => {
-                username = NameManager.cleanName(username);
-
-                // Ya hay un usuario en emparejamiento con el mismo nombre
-                if (!!this.playerQueue.find(p => p.username == username)) {
-                    socket.emit("onError", ...GetError("USERNAME_EXISTING"));
-                    return;
-                }
-                const player = new Player(username, socket);
-                // Si hay otro jugador en cola
-                if (this.playerQueue.length >= 1) {
-                    // Sacarlo de la cola y usarlo como rival
-                    const rival = this.playerQueue.shift();
-                    if (rival) {
-                        const game = new Game(player, rival);
-                        this.games.push(game);
-                        // Emparejamiento finalizado, partida iniciada
-                        socket.emit("onGameStarted", game.id, rival.username);
-                    }
-                }
-                // Si no hay jugadores en cola,
-                else {
-                    // Poner jugador en cola
-                    this.playerQueue.push(player);
-                }
-
-            });
+            socket.on("startGame", (username) => this.onStartGame(socket, username));
             // El jugador hace una jugada en un juego existente
-            socket.on("playGame", (gameid, x, y) => {
-                console.log(`jugada en ${gameid} hecha en ${x}, ${y}`);
-                // Hacer movida del rival
-                socket.emit("onRivalPlay", gameid, x + 1, y + 1);
-                // Juego terminado
-                socket.emit("onGameEnded", gameid, "the machine", "defeat");
-            });
+            socket.on("playGame", (...args) => this.onPlayGame(socket, ...args));
+            // Cancelar partidas y emparejamientos
+            socket.on("disconnect", () => this.onDisconnect(socket));
         });
+    }
+
+    /**
+     * Evento que se ejecuta al solicitar el inicio de un juego
+     * @param socket El socket que solicita el inicio del juego
+     * @param params [El nombre de usuario]
+     */
+    private onStartGame(socket: GameServer.ISocket, ...params: Parameters<GameServer.IClientToServer["startGame"]>) {
+        let username = params[0];
+        username = NameManager.cleanName(username);
+
+        // Ya hay un usuario en cola con el mismo nombre
+        if (!!this.queue.find(p => p.username == username)) {
+            // abortar proceso y emitir mensaje de error
+            socket.emit("onError", ...GetError("USERNAME_EXISTING"));
+            return;
+        }
+        // Crear el jugador y guardarlo en la lista
+        const player = new Player(username, socket);
+        this.players.push(player);
+
+        // Si hay otro jugador en cola
+        if (this.queue.length >= 1) {
+            // Sacarlo de la cola y usarlo como rival
+            const rival = this.queue.shift();
+            if (rival && rival !== player && rival.username !== player.username) {
+                const game = new Game(player, rival);
+                this.games.push(game);
+                // Emparejamiento finalizado, partida iniciada
+                player.socket.emit("onGameStarted", game.id, rival.username, game.isTurnOf(player));
+                rival.socket.emit("onGameStarted", game.id, player.username, game.isTurnOf(rival));
+            }
+        }
+        // Si no hay jugadores en cola,
+        else {
+            // Poner jugador en cola
+            this.queue.push(player);
+        }
+    }
+
+    private onPlayGame(socket: GameServer.ISocket, ...params: Parameters<GameServer.IClientToServer["playGame"]>) {
+        const [gameid, username, x, y] = params;
+        const game = this.games.find(x => x.id == gameid);
+        // si no se encontró la partida,
+        if (!game) {
+            // abortar proceso y emitir mensaje de error
+            socket.emit("onError", ...GetError("GAME_NOT_FOUND"));
+            return;
+        }
+        const player = game.get(username);
+        if (!player) {
+            // abortar proceso y emitir mensaje de error
+            socket.emit("onError", ...GetError("PLAYER_NOT_FOUND"));
+            return;
+        }
+        // Si se pudo hacer la jugada
+        if (game.play(player, x, y)) {
+            const other = game.other(player);
+            if (other) {
+                other.socket.emit("onRivalPlay", game.id, x, y);
+            }
+        }
+        else {
+            // abortar proceso y emitir mensaje de error
+            socket.emit("onError", ...GetError("GAME_PLAY_ERROR"));
+            return;
+        }
+
+    }
+
+    /**
+     * Evento que se ejecuta al desconectarse un cliente
+     * @param socket El socket que se desconecta
+     */
+    private onDisconnect(socket: GameServer.ISocket) {
+        const player = this.players.find(x => x.socket.id == socket.id);
+        if (player) {
+            let index = this.queue.indexOf(player);
+            if (index >= 0) {
+                this.queue.splice(index, 1);
+            }
+
+            // Finalizar partida
+            const game = this.games.find(x => x.includes(player));
+            if (game) {
+                game.end(game.other(player));
+                const index = this.games.indexOf(game);
+                if (index >= 0) this.games.splice(index, 1);
+            }
+        }
     }
 }
 
@@ -77,7 +142,7 @@ export namespace GameServer {
          * @param x La celda x en la cual hacer la jugada
          * @param y La celda y en la cual hacer la jugada
          */
-        (gameid: string, x: number, y: number) => void;
+        (gameid: string, username: string, x: number, y: number) => void;
     }
     export interface IServerToClient {
         /**
@@ -87,8 +152,9 @@ export namespace GameServer {
         /**
          * @param gameid ID de la partida creada
          * @param rivalname nombre del rival en la partida
+         * @param yourturn Es el turno del jugador actual?
          */
-        (gameid: string, rivalname: string) => void;
+        (gameid: string, rivalname: string, yourturn: boolean) => void;
         /**
          * Enviar mensaje al cliente cuando el rival haga una jugada
          */

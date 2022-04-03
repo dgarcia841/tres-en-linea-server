@@ -3,6 +3,7 @@ export default class NameManager {
         name = name.replace(/[^a-z0-9_ ]/ig, "");
         name = name.replace(/^\s*/i, "");
         name = name.replace(/\s*$/i, "");
+        name = name.replace(/\s+/ig, " ");
         return name;
     }
 }
