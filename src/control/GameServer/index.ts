@@ -1,6 +1,6 @@
 import IO from "socket.io";
 import GetError from "../GetError";
-import { NameManager } from "../Util/NameManager";
+import NameManager from "../Util/NameManager";
 import Game from "./Game";
 import Player from "./Player";
 
