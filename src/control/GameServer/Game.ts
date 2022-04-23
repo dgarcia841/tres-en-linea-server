@@ -13,6 +13,11 @@ export default class Game {
         this.players = players;
         this.id = Date.now().toString(36);
         this.board = new GameBoard();
+        players.forEach(player => {
+            const other = this.other(player);
+            if(!other) return;
+            player.socket.emit("onGameStarted", this.id, other.username, this.isTurnOf(player));
+        });
     }
     /**
      * Hace una jugada en el juego

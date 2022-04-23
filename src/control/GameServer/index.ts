@@ -65,9 +65,6 @@ export default class GameServer {
                 const game = new Game(player, rival);
                 this.games.push(game);
                 console.log("Game started: " + game.id);
-                // Emparejamiento finalizado, partida iniciada
-                player.socket.emit("onGameStarted", game.id, rival.username, game.isTurnOf(player));
-                rival.socket.emit("onGameStarted", game.id, player.username, game.isTurnOf(rival));
             }
         }
         // Si no hay jugadores en cola,
