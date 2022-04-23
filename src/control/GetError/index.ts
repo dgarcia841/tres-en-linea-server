@@ -21,11 +21,11 @@ const Errors = ErrorFactory({
         error: "No se ha encontrado la partida solicitada"
     },
     PLAYER_NOT_FOUND: {
-        code: 2,
+        code: 3,
         error: "No se ha encontrado el nombre de usuario en la partida"
     },
     GAME_PLAY_ERROR: {
-        code: 2,
+        code: 4,
         error: "No se ha podido realizar la jugada"
     },
 });
