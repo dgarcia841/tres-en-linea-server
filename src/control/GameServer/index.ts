@@ -15,12 +15,17 @@ export default class GameServer {
     public readonly games: Game[];
 
     public constructor(port = 9000) {
-        this.server = new IO.Server(port);
+        this.server = new IO.Server(port, {
+            cors: {
+                origin: "*"
+            }
+        });
         this.players = [];
         this.queue = [];
         this.games = [];
 
         this.server.on("connect", socket => {
+            console.log("Client connected: " + socket.id);
             // Iniciar emparejamiento
             socket.on("startGame", (username) => this.onStartGame(socket, username));
             // El jugador hace una jugada en un juego existente
@@ -129,6 +134,9 @@ export default class GameServer {
                 if (index >= 0) this.games.splice(index, 1);
                 console.log("Game " + game.id + " ended");
             }
+        }
+        else {
+            console.log("Client disconnected: " + socket.id);
         }
     }
 }
