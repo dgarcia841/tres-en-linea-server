@@ -45,9 +45,12 @@ export default class GameServer {
             socket.emit("onError", ...GetError("USERNAME_EXISTING"));
             return;
         }
+    
         // Crear el jugador y guardarlo en la lista
         const player = new Player(username, socket);
         this.players.push(player);
+
+        console.log("Player added to the queue: " + player.username + " (" + player.socket.id + ")");
 
         // Si hay otro jugador en cola
         if (this.queue.length >= 1) {
@@ -56,6 +59,7 @@ export default class GameServer {
             if (rival && rival !== player && rival.username !== player.username) {
                 const game = new Game(player, rival);
                 this.games.push(game);
+                console.log("Game started: " + game.id);
                 // Emparejamiento finalizado, partida iniciada
                 player.socket.emit("onGameStarted", game.id, rival.username, game.isTurnOf(player));
                 rival.socket.emit("onGameStarted", game.id, player.username, game.isTurnOf(rival));
@@ -71,20 +75,26 @@ export default class GameServer {
     private onPlayGame(socket: GameServer.ISocket, ...params: Parameters<GameServer.IClientToServer["playGame"]>) {
         const [gameid, username, x, y] = params;
         const game = this.games.find(x => x.id == gameid);
+
+        console.log("Player " + username + " (" + socket.id + ") played in game " + gameid);
+
         // si no se encontró la partida,
         if (!game) {
+            console.warn("Game not found: " + gameid);
             // abortar proceso y emitir mensaje de error
             socket.emit("onError", ...GetError("GAME_NOT_FOUND"));
             return;
         }
         const player = game.get(username);
         if (!player) {
+            console.warn("Player not found: " + username);
             // abortar proceso y emitir mensaje de error
             socket.emit("onError", ...GetError("PLAYER_NOT_FOUND"));
             return;
         }
         // Si se pudo hacer la jugada
         if (game.play(player, x, y)) {
+            console.log("Game " + gameid + " played");
             const other = game.other(player);
             if (other) {
                 other.socket.emit("onRivalPlay", game.id, x, y);
@@ -105,6 +115,7 @@ export default class GameServer {
     private onDisconnect(socket: GameServer.ISocket) {
         const player = this.players.find(x => x.socket.id == socket.id);
         if (player) {
+            console.log("Player " + player.username + " (" + player.socket.id + ") disconnected");
             let index = this.queue.indexOf(player);
             if (index >= 0) {
                 this.queue.splice(index, 1);
