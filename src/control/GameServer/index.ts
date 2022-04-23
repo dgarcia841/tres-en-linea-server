@@ -127,6 +127,7 @@ export default class GameServer {
                 game.end(game.other(player));
                 const index = this.games.indexOf(game);
                 if (index >= 0) this.games.splice(index, 1);
+                console.log("Game " + game.id + " ended");
             }
         }
     }
