@@ -1,5 +1,6 @@
 import { GameServer } from ".";
 import GameBoard from "../../model/GameBoard";
+import LeaderBoard from "../../model/LeaderBoard";
 import Player from "./Player";
 
 /**
@@ -56,6 +57,10 @@ export default class Game {
                 player.socket.emit("onWin", this.id, winner, result, where, position);
             });
 
+            // darle 100 puntos en el leaderboard al jugador que ganó
+            LeaderBoard.add(winner, 100);
+
+
             // Reiniciar partida
             this.resetDelayed();
         }
@@ -65,6 +70,11 @@ export default class Game {
             // emitir a ambos jugadores
             this.players.forEach(player => {
                 player.socket.emit("onDraw", this.id);
+            });
+
+            // darle 10 puntos a ambos jugadores en el leaderboard
+            this.players.forEach(player => {
+                LeaderBoard.add(player.username, 10);
             });
 
             // reiniciar partida
