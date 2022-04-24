@@ -101,6 +101,19 @@ export default class GameServer {
             if (other) {
                 other.socket.emit("onRivalPlay", game.id, x, y);
             }
+            // notificar si hay un ganador o empate
+            if (game.checkDraw()) {
+                console.log("Game " + game.id + " ended in draw");
+                player.socket.emit("onDraw", game.id);
+            }
+            // si hay un ganador
+            else {
+                const winner = game.checkWinner();
+                if (!winner) return;
+                const data: [string, string, number] = [winner[0].username, winner[1], winner[2]];
+
+                console.log("Game " + game.id + " ended in winner: " + winner[0].username + " (" + winner[2] + ")");
+            }
         }
         else {
             // abortar proceso y emitir mensaje de error
@@ -183,6 +196,28 @@ export namespace GameServer {
          * @param y La celda y en la cual se hizo la jugada
          */
         (gameid: string, x: number, y: number) => void;
+
+        /**
+         * Enviar mensaje al cliente cuando alguien gane la partida
+         */
+        onWin:
+        /**
+         * @param gameid ID de la partida creada
+         * @param winner El jugador ganador de la ronda
+         * @param where El lugar en el que ganó
+         * @param position La posición en la que ganó
+         */
+        (gameid: string, winner: string, where: "column" | "row" | "diagonal", position: number) => void;
+
+        /**
+         * Enviar mensaje al cliente cuando la partida termine en empate
+         */
+        onDraw:
+        /**
+         * @param gameid ID de la partida creada
+        */
+        (gameid: string) => void;
+
         /**
          * Enviar mensaje al cliente cuando la partida finaliza
          */

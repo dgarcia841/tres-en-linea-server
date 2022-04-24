@@ -92,4 +92,22 @@ export default class Game {
             player.socket.emit("onGameEnded", this.id, winnerName, result);
         });
     }
+
+    /**
+     * Obtiene el ganador del juego, si lo hay
+     * @returns El jugador ganador, o undefined si no hay ganador
+     */
+    public checkWinner(): [winner: Player, where: "column" | "row" | "diagonal", position: number] | undefined {
+        const winner = this.board.checkWinner();
+        if (winner == undefined) return undefined;
+        return [this.players[winner[0]], winner[1], winner[2]];
+    }
+    /**
+     * Comprueba si hay un empate
+     * @returns Si hay un empate o no
+     */
+    public checkDraw(): boolean {
+        return this.board.checkDraw();
+    }
+
 }
