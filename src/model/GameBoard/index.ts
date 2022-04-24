@@ -86,10 +86,9 @@ export default class GameBoard {
          * @returns true si hay un ganador en la fila 
          */
         const checkRow = (x: number) => {
-            const value = check(x, 0);
-            if (value === undefined) return undefined;
-            if (value === check(x, 1)) return value;
-            if (value === check(x, 2)) return value;
+            if (check(x, 0) == check(x, 1) && check(x, 1) == check(x, 2)) {
+                return check(x, 0);
+            }
             return undefined;
         }
         /**
@@ -98,10 +97,9 @@ export default class GameBoard {
          * @returns true si hay un ganador en la columna
          */
         const checkCol = (y: number) => {
-            const value = check(0, y);
-            if (value === undefined) return undefined;
-            if (value === check(1, y)) return value;
-            if (value === check(2, y)) return value;
+            if (check(0, y) == check(1, y) && check(1, y) == check(2, y)) {
+                return check(0, y);
+            }
             return undefined;
         }
         /**
@@ -109,10 +107,9 @@ export default class GameBoard {
          * @returns true si hay un ganador en la diagonal
          */
         const checkDiag = () => {
-            const value = check(0, 0);
-            if (value === undefined) return undefined;
-            if (value === check(1, 1)) return value;
-            if (value === check(2, 2)) return value;
+            if (check(0, 0) == check(1, 1) && check(1, 1) == check(2, 2)) {
+                return check(0, 0);
+            }
             return undefined;
         }
         /**
@@ -120,28 +117,35 @@ export default class GameBoard {
          * @returns true si hay un ganador en la diagonal
          */
         const checkDiag2 = () => {
-            const value = check(0, 2);
-            if (value === undefined) return undefined;
-            if (value === check(1, 1)) return value;
-            if (value === check(2, 0)) return value;
+            if (check(0, 2) == check(1, 1) && check(1, 1) == check(2, 0)) {
+                return check(0, 2);
+            }
             return undefined;
         }
         // comprueba si hay un ganador en alguna fila, columna o diagonal
         const checkDiagWinner = checkDiag();
         if (checkDiagWinner !== undefined) return [checkDiagWinner, "diagonal", 0];
         const checkDiag2Winner = checkDiag2();
-        if (checkDiag2Winner !== undefined) return [checkDiag2Winner, "diagonal", 2];
+        if (checkDiag2Winner !== undefined) return [checkDiag2Winner, "diagonal", 1];
         for (let i = 0; i < 3; i++) {
             const rowWinner = checkRow(i);
-            if (rowWinner !== undefined) return [rowWinner, "row", i];
+            if (rowWinner !== undefined) return [rowWinner, "column", i];
             const colWinner = checkCol(i);
-            if (colWinner !== undefined) return [colWinner, "column", i];
+            if (colWinner !== undefined) return [colWinner, "row", i];
         }
-        const diagWinner = checkDiag()
-        if (diagWinner !== undefined) return [diagWinner, "diagonal", 0];
-        const diag2Winner = checkDiag2();
-        if (diag2Winner !== undefined) return [diag2Winner, "diagonal", 2];
 
         return undefined;
+    }
+
+    /**
+     * Reiniciar el tablero
+     */
+    public restart() {
+        this._turn = (<[0, 1]>[0, 1])[Math.round(Math.random())];
+        this.board = [
+            [undefined, undefined, undefined],
+            [undefined, undefined, undefined],
+            [undefined, undefined, undefined]
+        ];
     }
 }

@@ -97,27 +97,10 @@ export default class GameServer {
         // Si se pudo hacer la jugada
         if (game.play(player, x, y)) {
             console.log("Game " + gameid + " played");
-            const other = game.other(player);
-            if (other) {
-                other.socket.emit("onRivalPlay", game.id, x, y);
-            }
-            // notificar si hay un ganador o empate
-            if (game.checkDraw()) {
-                console.log("Game " + game.id + " ended in draw");
-                player.socket.emit("onDraw", game.id);
-            }
-            // si hay un ganador
-            else {
-                const winner = game.checkWinner();
-                if (!winner) return;
-                const data: [string, string, number] = [winner[0].username, winner[1], winner[2]];
-
-                console.log("Game " + game.id + " ended in winner: " + winner[0].username + " (" + winner[2] + ")");
-            }
         }
         else {
             // abortar proceso y emitir mensaje de error
-            socket.emit("onError", ...GetError("GAME_PLAY_ERROR"));
+            player.socket.emit("onError", ...GetError("GAME_PLAY_ERROR"));
             return;
         }
 
@@ -186,6 +169,14 @@ export namespace GameServer {
          * @param yourid ID del jugador actual
          */
         (gameid: string, rivalname: string, yourturn: boolean, yourid: number) => void;
+
+        /**
+         * Enviar mensaje al cliente cuando la partida se haya reiniciado
+         * @param yourturn Es el turno del jugador actual?
+         */
+        onGameRestarted:
+        (yourturn: boolean) => void;
+        
         /**
          * Enviar mensaje al cliente cuando el rival haga una jugada
          */
@@ -204,10 +195,11 @@ export namespace GameServer {
         /**
          * @param gameid ID de la partida creada
          * @param winner El jugador ganador de la ronda
+         * @param result El resultado de la partida
          * @param where El lugar en el que ganó
          * @param position La posición en la que ganó
          */
-        (gameid: string, winner: string, where: "column" | "row" | "diagonal", position: number) => void;
+        (gameid: string, winner: string, result: IGameResult, where: IGamePosition, position: number) => void;
 
         /**
          * Enviar mensaje al cliente cuando la partida termine en empate
@@ -240,4 +232,5 @@ export namespace GameServer {
         (code: number, error: string) => void;
     }
     export type IGameResult = "victory" | "defeat" | "draw";
+    export type IGamePosition = "row" | "column" | "diagonal";
 }

@@ -15,7 +15,7 @@ export default class Game {
         this.board = new GameBoard();
         players.forEach((player, i) => {
             const other = this.other(player);
-            if(!other) return;
+            if (!other) return;
             player.socket.emit("onGameStarted", this.id, other.username, this.isTurnOf(player), i);
         });
     }
@@ -29,7 +29,49 @@ export default class Game {
     public play(player: Player, x: number, y: number): boolean {
         const index = this.players.indexOf(player);
         if (index < 0) return false;
-        return this.board.play(index, x, y);
+        if (!this.board.play(index, x, y)) {
+            return false;
+        }
+        // enviar el movimiento al resto de jugadores
+        const other = this.other(player);
+        if (other) {
+            other.socket.emit("onRivalPlay", this.id, x, y);
+        }
+
+
+        // datos del ganador
+        const winnerData = this.checkWinner();
+        // comprobar si hay un ganador
+        if (winnerData) {
+            console.log("Player " + winnerData[0].username + " won in game " + this.id);
+
+            // obtener datos del ganador
+            const [winner, where, position] = [winnerData[0].username, winnerData[1], winnerData[2]];
+
+            // emitir mensaje a los jugadores
+            this.players.forEach(player => {
+                // obtener resultado del juego
+                const result: GameServer.IGameResult = winner == player.username ? "victory" : "defeat";
+                // emitir resultado del juego
+                player.socket.emit("onWin", this.id, winner, result, where, position);
+            });
+
+            // Reiniciar partida
+            this.resetDelayed();
+        }
+        // comprobar si hay un empate
+        else if (this.checkDraw()) {
+            console.log("Game " + this.id + " ended in draw");
+            // emitir a ambos jugadores
+            this.players.forEach(player => {
+                player.socket.emit("onDraw", this.id);
+            });
+
+            // reiniciar partida
+            this.resetDelayed();
+        }
+
+        return true;
     }
     /**
      * Comprueba si es el turno de un jugador o no
@@ -87,7 +129,7 @@ export default class Game {
         const winnerName = winner ? winner.username : "-";
         this.players.forEach(player => {
             const result: GameServer.IGameResult = winnerName == "-" ? "draw" : (
-                winnerName == player.username ? "victory": "defeat"
+                winnerName == player.username ? "victory" : "defeat"
             );
             player.socket.emit("onGameEnded", this.id, winnerName, result);
         });
@@ -108,6 +150,28 @@ export default class Game {
      */
     public checkDraw(): boolean {
         return this.board.checkDraw();
+    }
+
+    /**
+     * Reiniciar el juego
+     */
+    public restart() {
+        this.board.restart();
+    }
+
+    /**
+     * Reinicia el juego tras cierto tiempo
+     * @param delay Tiempo de espera
+     */
+    public resetDelayed(delay = 2000) {
+        setTimeout(() => {
+            // reiniciar el juego
+            this.restart();
+            // emitir a los jugadores
+            this.players.forEach(player => {
+                player.socket.emit("onGameRestarted", this.isTurnOf(player));
+            });
+        }, delay);
     }
 
 }
