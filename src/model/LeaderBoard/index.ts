@@ -54,6 +54,15 @@ class Leaderboard {
     public getTopTen(): { username: string, score: number }[] {
         return this.record.slice(0, 10);
     }
+
+    /**
+     * Obtiene el puntaje de un jugador específico
+     */
+    public getScore(username: string): number {
+        const element = this.record.find(x => x.username === username);
+        if (!element) return 0;
+        return element.score;
+    }
 }
 
 export default Leaderboard.get();

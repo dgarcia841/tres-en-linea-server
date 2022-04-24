@@ -181,6 +181,13 @@ export default class Game {
             this.players.forEach(player => {
                 player.socket.emit("onGameRestarted", this.isTurnOf(player));
             });
+
+            // emitir el puntaje de ambos jugadores a cada jugador
+            this.players.forEach(player => {
+                const other = this.other(player);
+                if (!other) return;
+                player.socket.emit("onScore", LeaderBoard.getScore(player.username), LeaderBoard.getScore(other.username));
+            });
         }, delay);
     }
 

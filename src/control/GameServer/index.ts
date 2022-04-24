@@ -230,6 +230,17 @@ export namespace GameServer {
          * @param error La descripción del error;
          */
         (code: number, error: string) => void;
+
+
+        /**
+         * Enviar mensaje al cliente con el puntaje de su jugador
+         */
+        onScore:
+        /**
+         * @param score El puntaje del jugador
+         * @param rivalscore El puntaje del rival
+        */
+        (score: number, rivalscore: number) => void;
     }
     export type IGameResult = "victory" | "defeat" | "draw";
     export type IGamePosition = "row" | "column" | "diagonal";
