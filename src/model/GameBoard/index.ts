@@ -30,6 +30,7 @@ export default class GameBoard {
      */
     public play(player: number, x: number, y: number): boolean {
         if (player !== 0 && player !== 1) return false;
+        if(this.turn !== player) return false;
         x = Math.floor(x);
         y = Math.floor(y);
         if (x < 0 || x > 2) return false;
@@ -39,6 +40,7 @@ export default class GameBoard {
         if (value !== -1) return false;
 
         this.board[x][y] = (<[0, 1]>[0, 1])[player];
+        this._turn = (<[0, 1]>[0, 1])[1 - player];
         return true;
     }
 

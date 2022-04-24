@@ -78,7 +78,7 @@ export default class GameServer {
         const [gameid, username, x, y] = params;
         const game = this.games.find(x => x.id == gameid);
 
-        console.log("Player " + username + " (" + socket.id + ") played in game " + gameid);
+        console.log("Player " + username + " (" + socket.id + ") played in game " + gameid + " at (" + x + ", " + y + ")");
 
         // si no se encontró la partida,
         if (!game) {
@@ -170,8 +170,9 @@ export namespace GameServer {
          * @param gameid ID de la partida creada
          * @param rivalname nombre del rival en la partida
          * @param yourturn Es el turno del jugador actual?
+         * @param yourid ID del jugador actual
          */
-        (gameid: string, rivalname: string, yourturn: boolean) => void;
+        (gameid: string, rivalname: string, yourturn: boolean, yourid: number) => void;
         /**
          * Enviar mensaje al cliente cuando el rival haga una jugada
          */
