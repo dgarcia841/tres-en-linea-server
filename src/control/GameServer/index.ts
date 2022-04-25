@@ -1,4 +1,5 @@
 import IO from "socket.io";
+import LeaderBoard from "../../model/LeaderBoard";
 import GetError from "../GetError";
 import NameManager from "../Util/NameManager";
 import Game from "./Game";
@@ -14,6 +15,8 @@ export default class GameServer {
     public readonly queue: Player[];
     public readonly games: Game[];
 
+    public readonly suscribed: GameServer.ISocket[];
+
     public constructor(port = 9000) {
         this.server = new IO.Server(port, {
             cors: {
@@ -23,6 +26,7 @@ export default class GameServer {
         this.players = [];
         this.queue = [];
         this.games = [];
+        this.suscribed = [];
 
         this.server.on("connect", socket => {
             console.log("Client connected: " + socket.id);
@@ -32,7 +36,24 @@ export default class GameServer {
             socket.on("playGame", (...args) => this.onPlayGame(socket, ...args));
             // Cancelar partidas y emparejamientos
             socket.on("disconnect", () => this.onDisconnect(socket));
+            // el jugador se suscribe al leaderboard
+            socket.on("subscribeToLeaderboard", () => {
+                this.suscribed.push(socket);
+            });
         });
+
+        // emitir leaderboard a los suscriptores cada 2s
+        setInterval(() => {
+            this.suscribed.forEach(socket => {
+                // mapear nombres de usuario y puntajes en el top 10 usando URL encoded
+                const leaderboard = LeaderBoard.getTopTen()
+                    .map(x => encodeURIComponent(x.username) + "=" + x.score)
+                    .join("/");
+                // emitir leaderboard
+                socket.emit("onLeaderboard", leaderboard);
+            });
+        }, 2000);
+            
     }
 
     /**
@@ -131,6 +152,9 @@ export default class GameServer {
         else {
             console.log("Client disconnected: " + socket.id);
         }
+        // desuscribir al jugador del leaderboard
+        const index = this.suscribed.indexOf(socket);
+        if (index >= 0) this.suscribed.splice(index, 1);
     }
 }
 
@@ -156,6 +180,12 @@ export namespace GameServer {
          * @param y La celda y en la cual hacer la jugada
          */
         (gameid: string, username: string, x: number, y: number) => void;
+
+        /** 
+         * Suscribirse a actualizaciones periódicas del leaderboard
+        */
+        subscribeToLeaderboard:
+        () => void;
     }
     export interface IServerToClient {
         /**
@@ -241,6 +271,12 @@ export namespace GameServer {
          * @param rivalscore El puntaje del rival
         */
         (score: number, rivalscore: number) => void;
+
+        /**
+         * Enviar mensaje al cliente con el leaderboard, separados por coma
+         */
+        onLeaderboard:
+        (leaderboard: string) => void;
     }
     export type IGameResult = "victory" | "defeat" | "draw";
     export type IGamePosition = "row" | "column" | "diagonal";
