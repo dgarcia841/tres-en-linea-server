@@ -18,6 +18,7 @@ export default class GameServer {
     public readonly suscribed: GameServer.ISocket[];
 
     public constructor(port = 9000) {
+	console.log("Game server running on port: " + port);
         this.server = new IO.Server(port, {
             cors: {
                 origin: "*"
