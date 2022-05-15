@@ -31,7 +31,8 @@ interface AI {
     play(board: string[]): Promise<number>;
 }
 export interface IGameAI {
-    play(board: ICell[]): Promise<{x: number, y: number}>;
+    play(board: ICell[]): Promise<{ x: number, y: number }>;
+    level: "easy" | "medium" | "hard" | "expert";
 }
 export function createAI(config: IConfig = {
     level: "expert",
@@ -50,6 +51,7 @@ export function createAI(config: IConfig = {
             const x = pos % 3;
             const y = Math.floor(pos / 3);
             return { x, y };
-        }
+        },
+        level: config.level
     }
 }

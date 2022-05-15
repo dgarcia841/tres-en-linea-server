@@ -29,8 +29,7 @@ export default function AiClient(player: Player, allGames: Game[]) {
 
     io.connect();
     io.on("connect", () => {
-        const id = Date.now().toString(36);
-        const name = "TheMachine" + id;
+        const name = `The machine`;
         io.emit("startGame", name, 0, player.socket.id);
     });
     io.on("onGameStarted", (gameid, _, yourturn) => {
