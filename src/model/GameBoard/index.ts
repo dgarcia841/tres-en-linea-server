@@ -1,4 +1,4 @@
-type ICell = undefined | 0 | 1;
+export type ICell = undefined | 0 | 1;
 /**
  * Partida de tres en línea
  */
@@ -146,6 +146,23 @@ export default class GameBoard {
             [undefined, undefined, undefined],
             [undefined, undefined, undefined],
             [undefined, undefined, undefined]
+        ];
+    }
+
+    /**
+     * Convierte el tablero en un arreglo de 9 elementos
+     */
+    public toArray(): ICell[] {
+        return [
+            this.board[0][0],
+            this.board[1][0],
+            this.board[2][0],
+            this.board[0][1],
+            this.board[1][1],
+            this.board[2][1],
+            this.board[0][2],
+            this.board[1][2],
+            this.board[2][2]
         ];
     }
 }

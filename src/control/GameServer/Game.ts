@@ -191,4 +191,8 @@ export default class Game {
         }, delay);
     }
 
+    public toArray() {
+        return this.board.toArray();
+    }
+
 }

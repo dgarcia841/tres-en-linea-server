@@ -1,5 +1,6 @@
 import IO from "socket.io";
 import LeaderBoard from "../../model/LeaderBoard";
+import AiClient from "../AiClient";
 import GetError from "../GetError";
 import NameManager from "../Util/NameManager";
 import Game from "./Game";
@@ -32,7 +33,7 @@ export default class GameServer {
         this.server.on("connect", socket => {
             console.log("Client connected: " + socket.id);
             // Iniciar emparejamiento
-            socket.on("startGame", (username) => this.onStartGame(socket, username));
+            socket.on("startGame", (...args) => this.onStartGame(socket, ...args));
             // El jugador hace una jugada en un juego existente
             socket.on("playGame", (...args) => this.onPlayGame(socket, ...args));
             // Cancelar partidas y emparejamientos
@@ -66,6 +67,10 @@ export default class GameServer {
         let username = params[0];
         username = NameManager.cleanName(username);
 
+        const gamemode = params[1] == 1 ? "ia" : "pvp";
+        const rivalid = params[2];
+        const wantedRival = this.players.find(x => x.socket.id == rivalid);
+
         // Ya hay un usuario en cola con el mismo nombre
         if (!!this.queue.find(p => p.username == username)) {
             // abortar proceso y emitir mensaje de error
@@ -79,8 +84,17 @@ export default class GameServer {
 
         console.log("Player added to the queue: " + player.username + " (" + player.socket.id + ")");
 
+        if (gamemode == "ia") {
+            AiClient(player, this.games);
+        }
+        // si el jugador solicita jugar contra un rival
+        else if (wantedRival) {
+            const game = new Game(player, wantedRival);
+            this.games.push(game);
+            console.log("Game started: " + game.id);
+        }
         // Si hay otro jugador en cola
-        if (this.queue.length >= 1) {
+        else if (this.queue.length >= 1) {
             // Sacarlo de la cola y usarlo como rival
             const rival = this.queue.shift();
             if (rival && rival !== player && rival.username !== player.username) {
@@ -169,8 +183,10 @@ export namespace GameServer {
         startGame:
         /**
          * @param username El nombre de usuario del jugador
+         * @param mode El modo de juego (0 para partida rápida, 1 para juego contra la IA)
+         * @param rivalid El identificador del rival, o '' si se desea una partida rápida
          */
-        (username: string) => void;
+        (username: string, mode: number, rivalid: string) => void;
         /**
          * Hacer jugada en una partida existente
          */
