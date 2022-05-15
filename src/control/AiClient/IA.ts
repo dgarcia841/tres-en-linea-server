@@ -33,7 +33,11 @@ interface AI {
 export interface IGameAI {
     play(board: ICell[]): Promise<{x: number, y: number}>;
 }
-export function createAI(config: IConfig = {level: "expert", minResponseTime: 1000, maxResponseTime:1000}): IGameAI {
+export function createAI(config: IConfig = {
+    level: "expert",
+    minResponseTime: 1000,
+    maxResponseTime: 1000
+}): IGameAI {
     const instance = <AI>ai.createAI(config);
     return {
         async play(board: ICell[]) {

@@ -18,14 +18,20 @@ export default function AiClient(player: Player, allGames: Game[]) {
         const other = game.other(player);
         if (!other) return;
         const board = game.toArray();
-        const { x, y } = await ai.play(board);
-        io.emit("playGame", game.id, other.username, x, y);
+        try {
+            const { x, y } = await ai.play(board);
+            io.emit("playGame", game.id, other.username, x, y);
+        }
+        catch (e) {
+            console.log(`Machine ${io.id} says: ${e}`);
+        }
     }
 
     io.connect();
     io.on("connect", () => {
         const id = Date.now().toString(36);
-        io.emit("startGame", "The Machine " + id, 0, player.socket.id);
+        const name = "TheMachine" + id;
+        io.emit("startGame", name, 0, player.socket.id);
     });
     io.on("onGameStarted", (gameid, _, yourturn) => {
         game = allGames.find(g => g.id === gameid);
@@ -38,7 +44,7 @@ export default function AiClient(player: Player, allGames: Game[]) {
         play();
     });
     io.on("onError", (code, msg) => {
-        console.log(`Machine ${io.id} error: ${code} - ${msg}`);
+        console.log(`Machine ${io.id} says: ${code} - ${msg}`);
     });
     io.on("onGameEnded", () => io.disconnect());
 }
