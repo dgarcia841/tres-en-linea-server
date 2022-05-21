@@ -3,6 +3,9 @@
 const path = require("path");
 const nodeExternals = require("webpack-node-externals");
 const isProduction = process.env.NODE_ENV == "production";
+const GeneratePackageJsonPlugin = require("generate-package-json-webpack-plugin");
+const package = require("./package.json");
+
 
 const config = {
   entry: "./src/index.ts",
@@ -15,8 +18,15 @@ const config = {
     host: "localhost",
   },
   plugins: [
-    // Add your plugins here
-    // Learn more about plugins from https://webpack.js.org/configuration/plugins/
+    new GeneratePackageJsonPlugin({
+      //type: "module",
+      main: "./main.js",
+      name: package.name,
+      author: package.author,
+      version: package.version,
+      description: package.description,
+      license: package.license
+    })
   ],
   externals: [nodeExternals()],
   module: {
